@@ -5,7 +5,9 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import quote_plus, urlparse
@@ -40,24 +42,52 @@ class SeleniumScraper:
     def __init__(self, max_per_source: int = 8) -> None:
         self.max_per_source = max_per_source
         self.enabled = os.getenv("ENABLE_LIVE_SCRAPING", "0").lower() in {"1", "true", "yes"}
+        self.cache_seconds = max(0, int(os.getenv("SCRAPER_CACHE_SECONDS", "180")))
+        self._cache: dict[tuple[str, tuple[str, ...]], tuple[float, list[dict[str, Any]], list[str]]] = {}
+        self._cache_lock = threading.Lock()
 
     def search(self, query: str, source_names: list[str] | None = None) -> tuple[list[dict[str, Any]], list[str]]:
         if not self.enabled:
             return [], ["LIVE巡回は無効です。ENABLE_LIVE_SCRAPING=1 で有効化できます。"]
-        driver = self._create_driver()
+        cache_key = (query.strip().lower(), tuple(sorted(source_names or [])))
+        with self._cache_lock:
+            cached = self._cache.get(cache_key)
+        if cached and time.monotonic() - cached[0] <= self.cache_seconds:
+            return [dict(item) for item in cached[1]], list(cached[2])
+
         selected = [target for target in TARGETS if not source_names or target.name in source_names]
+        if not selected:
+            return [], ["巡回対象サイトが選択されていません。"]
+
+        worker_count = max(1, min(int(os.getenv("SCRAPER_WORKERS", "3")), len(selected)))
+        chunks = [selected[index::worker_count] for index in range(worker_count)]
         results: list[dict[str, Any]] = []
         warnings: list[str] = []
+        with ThreadPoolExecutor(max_workers=worker_count, thread_name_prefix="scraper") as executor:
+            futures = [executor.submit(self._collect_chunk, chunk, query) for chunk in chunks if chunk]
+            for future in as_completed(futures):
+                chunk_items, chunk_warnings = future.result()
+                results.extend(chunk_items)
+                warnings.extend(chunk_warnings)
+        unique = self._deduplicate(results)
+        with self._cache_lock:
+            self._cache[cache_key] = (time.monotonic(), [dict(item) for item in unique], list(warnings))
+        return unique, warnings
+
+    def _collect_chunk(self, targets: list[Target], query: str) -> tuple[list[dict[str, Any]], list[str]]:
+        driver = self._create_driver()
+        items: list[dict[str, Any]] = []
+        warnings: list[str] = []
         try:
-            for target in selected:
+            for target in targets:
                 try:
-                    results.extend(self._collect(driver, target, query))
+                    items.extend(self._collect(driver, target, query))
                 except Exception as exc:  # Site layouts and anti-bot responses are inherently variable.
                     warnings.append(f"{target.name}: 取得できませんでした（{type(exc).__name__}）")
-                time.sleep(0.7)
+                time.sleep(0.2)
         finally:
             driver.quit()
-        return self._deduplicate(results), warnings
+        return items, warnings
 
     @staticmethod
     def _create_driver():
@@ -70,15 +100,19 @@ class SeleniumScraper:
 
         attempts = []
         chrome_options = ChromeOptions()
+        chrome_options.page_load_strategy = "eager"
         chrome_options.add_argument("--headless=new")
         chrome_options.add_argument("--window-size=1440,1200")
         chrome_options.add_argument("--lang=ja-JP")
         chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+        chrome_options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
         attempts.append(lambda: webdriver.Chrome(options=chrome_options))
 
         edge_options = EdgeOptions()
+        edge_options.page_load_strategy = "eager"
         edge_options.add_argument("--headless=new")
         edge_options.add_argument("--window-size=1440,1200")
+        edge_options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
         attempts.append(lambda: webdriver.Edge(options=edge_options))
         if os.name != "nt":
             attempts.append(lambda: webdriver.Safari())
@@ -87,7 +121,7 @@ class SeleniumScraper:
         for attempt in attempts:
             try:
                 driver = attempt()
-                driver.set_page_load_timeout(25)
+                driver.set_page_load_timeout(14)
                 return driver
             except Exception as exc:
                 last_error = exc
@@ -96,7 +130,7 @@ class SeleniumScraper:
     def _collect(self, driver: Any, target: Target, query: str) -> list[dict[str, Any]]:
         url = target.search_url.format(query=quote_plus(query))
         driver.get(url)
-        time.sleep(1.2)
+        time.sleep(0.35)
         raw_items = driver.execute_script(
             """
             const priceRe = /(?:￥|¥|税込|価格)\\s*([0-9][0-9,]{2,})/;

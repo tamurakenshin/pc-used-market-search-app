@@ -39,6 +39,41 @@ class GroqAIService:
             fallback["summary"] += "（AI接続失敗のためローカル評価）"
             return fallback
 
+    def analyze_many(self, products: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Evaluate a search result set with local grouping and at most one Groq call per 35 items."""
+        if not products:
+            return []
+        groups: dict[str, list[dict[str, Any]]] = {}
+        for product in products:
+            groups.setdefault(str(product.get("part_type", "other")), []).append(product)
+        analyses = {
+            str(product.get("id")): self._local_analysis(product, groups[str(product.get("part_type", "other"))])
+            for product in products
+        }
+        if self.enabled:
+            for start in range(0, len(products), 35):
+                batch = products[start:start + 35]
+                prompt = {
+                    "task": "PC商品をまとめて査定し、指定JSON形式だけを返してください。",
+                    "grading": "gradeはS/A/B/C/ジャンク、labelは買い/適正/要確認/見送り。",
+                    "format": {"items": [{"id": "商品id", "grade": "A", "score": 85, "label": "買い", "market_price": 50000, "summary": "短い根拠"}]},
+                    "products": batch,
+                }
+                try:
+                    parsed = json.loads(self._chat(json.dumps(prompt, ensure_ascii=False), json_mode=True))
+                    for value in parsed.get("items", []):
+                        product_id = str(value.get("id", ""))
+                        if product_id in analyses:
+                            analyses[product_id] = self._validate_analysis(value, analyses[product_id])
+                except (OSError, ValueError, KeyError, json.JSONDecodeError):
+                    continue
+        evaluated = []
+        for product in products:
+            item = dict(product)
+            item["ai"] = analyses[str(product.get("id"))]
+            evaluated.append(item)
+        return evaluated
+
     def generate_listing(self, product: dict[str, Any], notes: str = "") -> dict[str, str]:
         fallback = self._local_listing(product, notes)
         if not self.enabled:

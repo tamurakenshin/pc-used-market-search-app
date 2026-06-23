@@ -15,6 +15,8 @@ python app.py
 ```powershell
 python -m pip install -r requirements.txt
 $env:ENABLE_LIVE_SCRAPING="1"
+$env:SCRAPER_WORKERS="3"        # 同時巡回数（任意）
+$env:SCRAPER_CACHE_SECONDS="180" # 同一検索のキャッシュ秒数（任意）
 python app.py
 ```
 

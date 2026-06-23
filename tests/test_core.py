@@ -45,8 +45,36 @@ class AIServiceTests(unittest.TestCase):
         self.assertIn("動作確認済み", result["description"])
         self.assertIn("caution", result)
 
+    def test_analyze_many_local(self):
+        products = [dict(SAMPLE_PRODUCTS[0]), dict(SAMPLE_PRODUCTS[1])]
+        results = self.service.analyze_many(products)
+        self.assertEqual(2, len(results))
+        self.assertTrue(all(item["ai"]["mode"] == "local" for item in results))
+
 
 class ScraperHelpersTests(unittest.TestCase):
+    def test_parallel_search_collects_all_targets(self):
+        scraper = SeleniumScraper()
+        scraper.enabled = True
+        calls = []
+
+        def collect(targets, query):
+            calls.append(query)
+            return ([
+                {"id": target.name, "title": target.name, "price": 1000, "part_type": "PC"}
+                for target in targets
+            ], [])
+
+        scraper._collect_chunk = collect
+        results, warnings = scraper.search("test")
+        first_call_count = len(calls)
+        cached_results, _ = scraper.search("test")
+        self.assertEqual(len(set(item["id"] for item in results)), len(results))
+        self.assertEqual(results, cached_results)
+        self.assertGreater(first_call_count, 0)
+        self.assertEqual(first_call_count, len(calls))
+        self.assertFalse(warnings)
+
     def test_part_detection(self):
         self.assertEqual("CPU", SeleniumScraper._part_type("Intel Core i7-14700K"))
         self.assertEqual("GPU", SeleniumScraper._part_type("GeForce RTX 4070"))

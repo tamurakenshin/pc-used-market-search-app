@@ -106,9 +106,7 @@ class AppHandler(BaseHTTPRequestHandler):
         use_live = bool(body.get("live"))
         if use_live:
             live_items, warnings = scraper.search(query or "ゲーミングPC", body.get("sources"))
-            for item in live_items:
-                comparable = [candidate for candidate in live_items if candidate.get("part_type") == item.get("part_type")]
-                item["ai"] = ai_service.analyze(item, comparable)
+            live_items = ai_service.analyze_many(live_items)
             if live_items:
                 return self.send_json({"items": live_items, "total": len(live_items), "mode": "live", "warnings": warnings})
             demo = filtered_products({"q": [query]})
