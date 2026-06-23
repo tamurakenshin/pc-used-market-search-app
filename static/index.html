@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ja" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="PC・パーツの価格を横断検索し、AIで相場評価するローカルツール">
+  <title>PC Scout AI</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="primary-sidebar" id="primarySidebar" aria-label="メインカテゴリ">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 28 28"><path d="M4 6.5h20v14H4zM9 24h10M14 20.5V24"/><path d="m10 11 3 3-3 3m5-1h4"/></svg>
+        </span>
+        <span><strong>PC Scout</strong><small>Market intelligence</small></span>
+      </div>
+
+      <nav class="category-nav">
+        <p class="nav-label">MARKET</p>
+        <button class="nav-item is-active" data-category="すべて">
+          <span class="nav-icon">⌂</span><span>ダッシュボード</span><span class="nav-count" data-count="すべて">12</span>
+        </button>
+        <button class="nav-item" data-category="新品BTO"><span class="nav-icon">▣</span><span>新品BTO</span></button>
+        <button class="nav-item" data-category="新品PCパーツ"><span class="nav-icon">⌘</span><span>新品パーツ</span></button>
+        <button class="nav-item" data-category="新品周辺機器"><span class="nav-icon">⌨</span><span>新品周辺機器</span></button>
+        <p class="nav-label">SECOND HAND</p>
+        <button class="nav-item" data-category="中古PC"><span class="nav-icon">▱</span><span>中古PC</span></button>
+        <button class="nav-item" data-category="中古PCパーツ"><span class="nav-icon">◇</span><span>中古PCパーツ</span><span class="nav-count" data-count="中古PCパーツ">6</span></button>
+        <button class="nav-item" data-category="中古周辺機器"><span class="nav-icon">◉</span><span>中古周辺機器</span></button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <button class="nav-item" id="settingsButton"><span class="nav-icon">⚙</span><span>設定</span></button>
+        <div class="connection-card">
+          <div class="connection-row"><span class="status-dot" id="serverDot"></span><span>Local server</span><b id="serverStatus">接続中</b></div>
+          <div class="connection-row"><span class="status-dot" id="groqDot"></span><span>Groq AI</span><b id="groqStatus">確認中</b></div>
+        </div>
+      </div>
+    </aside>
+
+    <aside class="filter-sidebar" id="filterSidebar" aria-label="絞り込み条件">
+      <div class="filter-heading">
+        <div><p class="eyebrow">FILTERS</p><h2 id="filterTitle">すべての商品</h2></div>
+        <button class="icon-button mobile-only" id="closeFilters" aria-label="フィルターを閉じる">×</button>
+      </div>
+
+      <div class="filter-scroll">
+        <section class="filter-section">
+          <div class="section-title"><span>カテゴリ</span><button class="text-button" id="clearFilters">クリア</button></div>
+          <div class="segment-grid" id="partTypeFilter">
+            <button class="segment is-active" data-value="">すべて</button>
+            <button class="segment" data-value="CPU">CPU</button>
+            <button class="segment" data-value="GPU">GPU</button>
+            <button class="segment" data-value="メモリ">メモリ</button>
+            <button class="segment" data-value="ストレージ">SSD / HDD</button>
+            <button class="segment" data-value="PC">PC本体</button>
+          </div>
+        </section>
+
+        <section class="filter-section" id="cpuFilters">
+          <div class="section-title"><span>CPUメーカー</span></div>
+          <div class="chip-row" id="brandFilter">
+            <button class="chip is-active" data-value="">すべて</button>
+            <button class="chip" data-value="Intel">Intel</button>
+            <button class="chip" data-value="AMD">AMD</button>
+          </div>
+          <div class="two-column-fields">
+            <label class="field"><span>コア数</span><select id="coresFilter"><option value="">指定なし</option><option value="6">6以上</option><option value="8">8以上</option><option value="12">12以上</option><option value="16">16以上</option></select></label>
+            <label class="field"><span>年式</span><select id="yearFilter"><option value="">指定なし</option><option value="2024">2024〜</option><option value="2023">2023〜</option><option value="2022">2022〜</option><option value="2020">2020〜</option></select></label>
+          </div>
+          <label class="field"><span>ソケット / 世代</span><input id="socketFilter" type="text" placeholder="例：AM5, LGA1700"></label>
+        </section>
+
+        <section class="filter-section">
+          <div class="section-title"><span>商品の状態</span></div>
+          <div class="grade-filter" id="conditionFilter">
+            <button class="grade-option is-active" data-value=""><b>ALL</b><span>すべて</span></button>
+            <button class="grade-option" data-value="S"><b>S</b><span>新品</span></button>
+            <button class="grade-option" data-value="A"><b>A</b><span>美品</span></button>
+            <button class="grade-option" data-value="B"><b>B</b><span>良好</span></button>
+            <button class="grade-option" data-value="C"><b>C</b><span>使用感</span></button>
+          </div>
+        </section>
+
+        <section class="filter-section">
+          <div class="section-title"><span>価格予算</span></div>
+          <div class="price-fields">
+            <label><span>下限</span><div class="price-input"><i>¥</i><input id="priceMin" inputmode="numeric" placeholder="0"></div></label>
+            <span class="range-separator">—</span>
+            <label><span>上限</span><div class="price-input"><i>¥</i><input id="priceMax" inputmode="numeric" placeholder="500,000"></div></label>
+          </div>
+          <div class="budget-presets">
+            <button data-max="30000">〜3万</button><button data-max="100000">〜10万</button><button data-max="200000">〜20万</button>
+          </div>
+        </section>
+
+        <section class="filter-section">
+          <label class="field"><span>フリーワード</span><input id="freewordFilter" type="search" placeholder="型番・規格・メーカー"></label>
+          <label class="field"><span>除外ワード <small>カンマ区切り</small></span><input id="excludeFilter" type="text" placeholder="ジャンク, 動作未確認"></label>
+        </section>
+      </div>
+      <div class="filter-footer"><button class="secondary-button" id="applyFilters">条件を適用</button></div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-mobile"><button class="icon-button" id="openMenu" aria-label="メニューを開く">☰</button><button class="icon-button" id="openFilters" aria-label="フィルターを開く">⌁</button></div>
+        <div class="page-intro">
+          <p class="eyebrow"><span class="live-pulse"></span> LIVE MARKET OVERVIEW</p>
+          <h1 id="pageTitle">マーケットを探索</h1>
+          <p id="resultSummary">複数ストアの価格を比較し、AIが買い時を判定します。</p>
+        </div>
+        <div class="header-actions">
+          <button class="outline-button" id="aiResearchButton"><span class="sparkle">✦</span> AIに相談</button>
+          <button class="icon-button" id="themeToggle" aria-label="テーマ切替"><span class="theme-icon">☾</span></button>
+          <label class="column-control" title="グリッド列数"><span>列</span><select id="columnSelect"><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option></select></label>
+        </div>
+      </header>
+
+      <section class="metrics" aria-label="検索サマリー">
+        <article><span class="metric-icon mint">¥</span><div><small>相場中央値</small><strong id="medianPrice">—</strong><em id="medianDelta">表示中の商品</em></div></article>
+        <article><span class="metric-icon amber">✦</span><div><small>AIおすすめ</small><strong id="dealCount">—</strong><em>スコア86以上</em></div></article>
+        <article><span class="metric-icon blue">◎</span><div><small>掲載ストア</small><strong id="sourceCount">—</strong><em>横断データ</em></div></article>
+        <article><span class="metric-icon violet">↻</span><div><small>データモード</small><strong id="dataMode">DEMO</strong><em id="updatedAt">更新 —</em></div></article>
+      </section>
+
+      <section class="results-toolbar">
+        <div class="results-heading"><h2>ピックアップ</h2><span id="resultCount">0件</span></div>
+        <div class="toolbar-actions">
+          <label class="live-switch"><input type="checkbox" id="liveToggle"><span></span>LIVE巡回</label>
+          <label class="sort-control"><span>並び順</span><select id="sortSelect"><option value="score">AIおすすめ順</option><option value="priceAsc">価格が安い順</option><option value="priceDesc">価格が高い順</option><option value="newest">新しい世代順</option></select></label>
+        </div>
+      </section>
+
+      <div class="notice is-hidden" id="notice" role="status"></div>
+      <section class="product-grid" id="productGrid" aria-live="polite"></section>
+      <div class="empty-state is-hidden" id="emptyState">
+        <span>⌕</span><h3>条件に合う商品がありません</h3><p>検索語や価格範囲を少し広げてみてください。</p><button class="secondary-button" id="emptyReset">条件をリセット</button>
+      </div>
+      <div class="content-spacer"></div>
+
+      <form class="search-dock" id="searchForm">
+        <div class="search-mode"><span class="status-dot"></span><small>MARKET SEARCH</small></div>
+        <div class="search-input-wrap"><span class="search-icon">⌕</span><input id="searchInput" type="search" autocomplete="off" placeholder="製品名・型番を入力（例：Ryzen 7 7800X3D）"><kbd>Enter</kbd></div>
+        <button class="primary-button" type="submit"><span>横断検索</span><b>→</b></button>
+      </form>
+    </main>
+  </div>
+  <div class="mobile-scrim" id="mobileScrim"></div>
+
+  <dialog class="modal product-modal" id="productModal">
+    <button class="modal-close" data-close="productModal" aria-label="閉じる">×</button>
+    <div id="productModalContent"></div>
+  </dialog>
+
+  <dialog class="modal ai-modal" id="aiModal">
+    <button class="modal-close" data-close="aiModal" aria-label="閉じる">×</button>
+    <div class="ai-modal-header"><span class="ai-orb">✦</span><div><p class="eyebrow">GROQ ASSISTANT</p><h2>PC Scout AIに相談</h2></div></div>
+    <div class="ai-suggestions">
+      <button>今の検索結果で一番お買い得なのは？</button>
+      <button>中古CPUを選ぶ際の注意点は？</button>
+      <button>予算10万円でおすすめを絞って</button>
+    </div>
+    <div class="ai-answer" id="aiAnswer"><p>表示中の商品データをもとに、価格比較や選び方をお手伝いします。</p></div>
+    <form class="ai-form" id="aiForm"><input id="aiQuestion" placeholder="市場データについて質問する…" required><button class="primary-button" type="submit">質問する</button></form>
+  </dialog>
+
+  <dialog class="modal settings-modal" id="settingsModal">
+    <button class="modal-close" data-close="settingsModal" aria-label="閉じる">×</button>
+    <p class="eyebrow">SETTINGS</p><h2>巡回ソース設定</h2>
+    <p class="modal-description">LIVE巡回時に検索するストアを選択します。サイト側の仕様により取得できない場合があります。</p>
+    <div class="source-grid" id="sourceGrid"></div>
+    <div class="settings-note"><span>i</span><p>Groq APIキーとLIVE巡回の有効化は、安全のためサーバー環境変数で管理します。詳しくはREADMEを参照してください。</p></div>
+    <button class="secondary-button full-width" data-close="settingsModal">設定を保存</button>
+  </dialog>
+
+  <div class="toast-region" id="toastRegion" aria-live="polite"></div>
+  <script src="/app.js" defer></script>
+</body>
+</html>

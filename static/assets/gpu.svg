@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#343f38"/><stop offset="1" stop-color="#111714"/></linearGradient><filter id="s"><feDropShadow dx="0" dy="18" stdDeviation="16" flood-opacity=".3"/></filter></defs>
+  <rect width="640" height="420" fill="#e6ebe6"/><path d="M0 340 640 80v340H0z" fill="#c9f154" opacity=".12"/>
+  <g transform="translate(83 103)" filter="url(#s)"><path d="M30 0h405a22 22 0 0 1 22 22v175a22 22 0 0 1-22 22H30A22 22 0 0 1 8 197V22A22 22 0 0 1 30 0Z" fill="url(#g)"/><path d="M457 43h34v132h-34" fill="#879188"/><path d="M83 219h260v19H83z" fill="#d5b84e"/>
+  <g fill="none" stroke="#75827a" stroke-width="7"><circle cx="138" cy="109" r="73"/><circle cx="324" cy="109" r="73"/></g><g fill="#202a24" stroke="#87948c" stroke-width="4"><circle cx="138" cy="109" r="21"/><circle cx="324" cy="109" r="21"/></g>
+  <g fill="#4b5950"><path d="m138 41 18 48-18 20-20-18zM206 109l-48 18-20-18 18-20zM138 177l-18-48 18-20 20 18zM70 109l48-18 20 18-18 20z"/><path d="m324 41 18 48-18 20-20-18zM392 109l-48 18-20-18 18-20zM324 177l-18-48 18-20 20 18zM256 109l48-18 20 18-18 20z"/></g><rect x="23" y="16" width="75" height="18" rx="6" fill="#c9f154"/><text x="60" y="29" text-anchor="middle" font-family="Arial" font-size="9" font-weight="700" fill="#17200f">GRAPHICS</text></g>
+</svg>

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420">
+  <defs><linearGradient id="n" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#17251d"/><stop offset="1" stop-color="#486051"/></linearGradient><filter id="s"><feDropShadow dx="0" dy="16" stdDeviation="15" flood-opacity=".26"/></filter></defs>
+  <rect width="640" height="420" fill="#e8ede8"/><path d="M0 0h260L0 260z" fill="#7db392" opacity=".16"/>
+  <g transform="translate(98 150) rotate(-7 220 58)" filter="url(#s)"><rect width="444" height="116" rx="16" fill="url(#n)"/><circle cx="24" cy="58" r="8" fill="#d7c16d"/><circle cx="420" cy="58" r="8" fill="#d7c16d"/><rect x="60" y="20" width="132" height="76" rx="7" fill="#0d1510"/><rect x="211" y="20" width="72" height="76" rx="7" fill="#0d1510"/><rect x="300" y="25" width="84" height="66" rx="5" fill="#adc1b2"/><text x="342" y="53" text-anchor="middle" font-family="Arial" font-weight="700" font-size="12" fill="#24332a">NVMe</text><text x="342" y="72" text-anchor="middle" font-family="Arial" font-size="9" fill="#46574c">SOLID STATE</text><path d="M444 25h22v18h-22m0 12h22v18h-22m0 12h22v18h-22" fill="#d5b958"/></g>
+</svg>
